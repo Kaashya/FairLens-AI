@@ -159,7 +159,7 @@ def explain_bias_with_gemini(analysis_results: dict, dataset_name: str = "datase
             response_text = "\n".join(lines[1:-1])
 
         explanation = json.loads(response_text)
-        explanation["source"] = "gemini-1.5-flash"
+        explanation["source"] = "gemini-flash-latest"
         return explanation
 
     except json.JSONDecodeError:
@@ -171,7 +171,7 @@ def explain_bias_with_gemini(analysis_results: dict, dataset_name: str = "datase
             "recommendations": [],
             "severity_label": "UNKNOWN",
             "one_liner": "AI explanation unavailable.",
-            "source": "gemini-1.5-flash",
+            "source": "gemini-flash-latest",
             "error": "Response was not valid JSON"
         }
     except Exception as e:
