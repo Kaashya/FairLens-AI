@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, File, UploadFile, Form
 from pydantic import BaseModel
 from typing import List, Optional
 import pandas as pd
 import os
+import json
 
 # Import the services and ml module
 from app.services import gemini_service
@@ -18,36 +19,26 @@ from ml import bias_detection
 
 router = APIRouter(prefix="/api")
 
-class AnalyzeRequest(BaseModel):
-    targetColumn: Optional[str] = None
-    protectedAttributes: Optional[List[str]] = None
-
 @router.post("/analyze")
-def analyze(req: AnalyzeRequest):
-    # Load dummy CSV for merge test
-    csv_path = os.path.join(project_root, "frontend", "dummy.csv")
-    
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-    else:
-        # Fallback dummy data
-        data = {
-            "id": [1, 2, 3, 4],
-            "gender": ["Male", "Female", "Male", "Female"],
-            "age": [35, 28, 42, 30],
-            "race": ["White", "Black", "Asian", "Hispanic"],
-            "loan_approved": [1, 0, 1, 1]
-        }
-        df = pd.DataFrame(data)
-
+async def analyze(
+    file: UploadFile = File(...),
+    targetColumn: str = Form(""),
+    protectedAttributes: str = Form("[]")
+):
     try:
+        protected_cols = json.loads(protectedAttributes)
+        if targetColumn == "":
+            targetColumn = None
+            
+        df = pd.read_csv(file.file)
+
         results = bias_detection.analyze_dataset(
             df, 
-            outcome_col=req.targetColumn, 
-            protected_cols=req.protectedAttributes
+            outcome_col=targetColumn, 
+            protected_cols=protected_cols
         )
         
-        explanation_dict = gemini_service.explain_bias_with_gemini(results, "dummy.csv")
+        explanation_dict = gemini_service.explain_bias_with_gemini(results, file.filename)
         
         if "summary" in explanation_dict:
             ai_explanation = explanation_dict.get("summary", "") + " " + explanation_dict.get("what_it_means", "")

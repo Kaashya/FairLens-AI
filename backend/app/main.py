@@ -32,11 +32,25 @@ from dotenv import load_dotenv
 load_dotenv()  # Automatically loads variables from .env file
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.routes import bias
 
 app = FastAPI(title="FairLens API")
 app.include_router(bias.router)
 
-@app.get("/")
-def root():
-    return {"message": "FairLens API running"}
+frontend_dist = os.path.join(project_root, "frontend", "dist")
+
+if os.path.isdir(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    @app.get("/")
+    def root():
+        return {"message": "FairLens API running (Frontend not built)"}

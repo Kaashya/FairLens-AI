@@ -5,11 +5,16 @@ import axios from 'axios';
 const API_BASE_URL = '/api';
 
 export const analyzeDataset = async (file, targetColumn, protectedAttributes) => {
-  // We're skipping actual file upload for this merge test and sending a dummy post
   try {
-    const response = await axios.post(`${API_BASE_URL}/analyze`, {
-      targetColumn,
-      protectedAttributes
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('targetColumn', targetColumn || '');
+    formData.append('protectedAttributes', JSON.stringify(protectedAttributes || []));
+
+    const response = await axios.post(`${API_BASE_URL}/analyze`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     });
     return response.data;
   } catch (error) {

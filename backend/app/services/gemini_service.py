@@ -28,7 +28,7 @@ def init_gemini():
             "Get your key from: https://aistudio.google.com/app/apikey"
         )
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-1.5-flash")
+    return genai.GenerativeModel("gemini-flash-latest")
 
 
 def build_analysis_prompt(analysis_results: dict, dataset_name: str = "uploaded dataset") -> str:
