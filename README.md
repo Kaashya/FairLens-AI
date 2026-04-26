@@ -34,7 +34,18 @@ FairLens-AI is an intelligent, user-friendly platform designed to detect, explai
    FIREBASE_KEY_PATH=firebase-key.json
    ```
 
-### 3. Running the Project
+### 3. Installation
+Before running the project for the first time, you must install the dependencies:
+1. Open a terminal in the `frontend` folder and run:
+   ```bash
+   npm install
+   ```
+2. Open a terminal in the `backend` folder and run:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### 4. Running the Project
 The easiest way to start the project on Windows is by using the included batch script. This will automatically build the React frontend and start the Python backend server.
 
 1. Double-click **`start.bat`** in the main project folder.
