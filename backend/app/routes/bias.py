@@ -30,8 +30,17 @@ async def analyze(
         if targetColumn == "":
             targetColumn = None
             
-        df = pd.read_csv(file.file)
-
+        import csv
+        sample = file.file.read(1024).decode('utf-8', errors='ignore')
+        file.file.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample)
+            sep = dialect.delimiter
+        except Exception:
+            sep = ','
+            
+        df = pd.read_csv(file.file, sep=sep)
+        df.columns = df.columns.str.replace('"', '').str.strip()
         results = bias_detection.analyze_dataset(
             df, 
             outcome_col=targetColumn, 
@@ -62,6 +71,12 @@ async def analyze(
         
         return response_data
     except Exception as e:
+        import traceback
+        with open("error.log", "w") as f:
+            f.write(f"targetColumn: {targetColumn}\n")
+            if 'df' in locals():
+                f.write(f"df.columns: {df.columns.tolist()}\n")
+            f.write(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/history")
