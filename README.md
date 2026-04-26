@@ -60,11 +60,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📸 Screenshots
 
-### Dashboard
-![FairLens Dashboard](FairLens%20ScreenShot/Dashboard.png)
-
 ### Upload Dataset
 ![Upload Dataset](FairLens%20ScreenShot/upload.png)
+
+### Dashboard
+![FairLens Dashboard](FairLens%20ScreenShot/Dashboard.png)
 
 ### AI Explanation
 ![AI Explanation](FairLens%20ScreenShot/Ai_Explainer.png)
