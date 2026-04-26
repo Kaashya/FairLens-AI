@@ -1,7 +1,5 @@
 # ⚖️ FairLens-AI
 
-![FairLens Dashboard](FairLens%20ScreenShot/Dashboard.png)
-
 FairLens-AI is an intelligent, user-friendly platform designed to detect, explain, and help mitigate bias in machine learning datasets. It bridges the gap between complex algorithmic fairness metrics and non-technical stakeholders by providing plain-English explanations powered by Google Gemini.
 
 ## ✨ Key Features
@@ -36,22 +34,6 @@ FairLens-AI is an intelligent, user-friendly platform designed to detect, explai
    FIREBASE_KEY_PATH=firebase-key.json
    ```
 
-### 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
----
-
-## 📸 Interface Preview
-
-### Upload Dataset
-![Upload Dataset](FairLens%20ScreenShot/upload.png)
-
-### AI Explanation
-![AI Explanation](FairLens%20ScreenShot/Ai_Explainer.png)
-
-### Cloud History
-![Scan History](FairLens%20ScreenShot/History.png)
-
 ### 3. Installation
 Before running the project for the first time, you must install the dependencies:
 1. Open a terminal in the `frontend` folder and run:
@@ -70,3 +52,22 @@ The easiest way to start the project on Windows is by using the included batch s
 2. Open your browser and go to: **`http://localhost:8000`**
 
 *(Note: The `start.bat` script automatically stops any old hanging servers on port 8000 so you never get an "address already in use" error!)*
+
+## 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+---
+
+## 📸 Screenshots
+
+### Dashboard
+![FairLens Dashboard](FairLens%20ScreenShot/Dashboard.png)
+
+### Upload Dataset
+![Upload Dataset](FairLens%20ScreenShot/upload.png)
+
+### AI Explanation
+![AI Explanation](FairLens%20ScreenShot/Ai_Explainer.png)
+
+### Cloud History
+![Scan History](FairLens%20ScreenShot/History.png)
