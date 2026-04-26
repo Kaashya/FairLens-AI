@@ -52,6 +52,3 @@ The easiest way to start the project on Windows is by using the included batch s
 2. Open your browser and go to: **`http://localhost:8000`**
 
 *(Note: The `start.bat` script automatically stops any old hanging servers on port 8000 so you never get an "address already in use" error!)*
-
-## 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
