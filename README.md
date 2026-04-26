@@ -1,5 +1,7 @@
 # ⚖️ FairLens-AI
 
+![FairLens Dashboard](screenshot.png)
+
 FairLens-AI is an intelligent, user-friendly platform designed to detect, explain, and help mitigate bias in machine learning datasets. It bridges the gap between complex algorithmic fairness metrics and non-technical stakeholders by providing plain-English explanations powered by Google Gemini.
 
 ## ✨ Key Features
