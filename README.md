@@ -42,12 +42,5 @@ The easiest way to start the project on Windows is by using the included batch s
 
 *(Note: The `start.bat` script automatically stops any old hanging servers on port 8000 so you never get an "address already in use" error!)*
 
-### 4. Optional: Custom Domain (Windows)
-If you prefer to access your site by typing `http://fairlens:8000` instead of `localhost:8000`:
-1. Run **Notepad** as Administrator.
-2. Open `C:\Windows\System32\drivers\etc\hosts`.
-3. Add this line at the bottom: `127.0.0.1  fairlens`
-4. Save the file.
-
 ## 🤝 Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
