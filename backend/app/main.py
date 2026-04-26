@@ -32,8 +32,10 @@ from dotenv import load_dotenv
 load_dotenv()  # Automatically loads variables from .env file
 
 from fastapi import FastAPI
+from app.routes import bias
 
 app = FastAPI(title="FairLens API")
+app.include_router(bias.router)
 
 @app.get("/")
 def root():
