@@ -16,3 +16,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Firebase
+backend/firebase-key.json

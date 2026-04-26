@@ -6,7 +6,7 @@ import os
 import json
 
 # Import the services and ml module
-from app.services import gemini_service
+from app.services import gemini_service, firebase_service
 import sys
 
 # We add the root path to make sure ml module is discoverable
@@ -45,7 +45,7 @@ async def analyze(
         else:
             ai_explanation = str(explanation_dict)
             
-        return {
+        response_data = {
             "bias_score": results.get("bias_score", 0),
             "verdict": results.get("verdict", "Unknown"),
             "flagged_columns": results.get("flagged_columns", []),
@@ -56,12 +56,17 @@ async def analyze(
             "group_stats": results.get("group_stats", {}),
             "ai_explanation": ai_explanation
         }
+        
+        # Save to Firebase history (if configured)
+        firebase_service.save_scan_to_firestore(response_data, file.filename)
+        
+        return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/history")
 def history():
-    return []
+    return firebase_service.get_scan_history()
 
 class ExplainRequest(BaseModel):
     question: str
