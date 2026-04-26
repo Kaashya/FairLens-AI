@@ -1,6 +1,6 @@
 # ⚖️ FairLens-AI
 
-![FairLens Dashboard](screenshot.png)
+![FairLens Dashboard](FairLens%20ScreenShot/Dashboard.png)
 
 FairLens-AI is an intelligent, user-friendly platform designed to detect, explain, and help mitigate bias in machine learning datasets. It bridges the gap between complex algorithmic fairness metrics and non-technical stakeholders by providing plain-English explanations powered by Google Gemini.
 
@@ -35,6 +35,22 @@ FairLens-AI is an intelligent, user-friendly platform designed to detect, explai
    ```text
    FIREBASE_KEY_PATH=firebase-key.json
    ```
+
+### 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+---
+
+## 📸 Interface Preview
+
+### Upload Dataset
+![Upload Dataset](FairLens%20ScreenShot/upload.png)
+
+### AI Explanation
+![AI Explanation](FairLens%20ScreenShot/Ai_Explainer.png)
+
+### Cloud History
+![Scan History](FairLens%20ScreenShot/History.png)
 
 ### 3. Installation
 Before running the project for the first time, you must install the dependencies:
