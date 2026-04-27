@@ -1,8 +1,25 @@
-import React, { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, File, AlertCircle } from 'lucide-react';
-import { analyzeDataset } from '../api';
 import Papa from 'papaparse';
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileSpreadsheet,
+  PlayCircle,
+  ShieldCheck,
+  Target,
+  UploadCloud,
+  X,
+} from 'lucide-react';
+import { analyzeDataset } from '../api';
+
+const formatFileSize = (bytes = 0) => {
+  if (!bytes) return '0 KB';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const size = bytes / (1024 ** index);
+  return `${size.toFixed(size >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+};
 
 export default function UploadPage() {
   const [file, setFile] = useState(null);
@@ -10,203 +27,297 @@ export default function UploadPage() {
   const [targetCol, setTargetCol] = useState('');
   const [protectedCols, setProtectedCols] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  const handleFileSelect = (selectedFile) => {
-    if (selectedFile) {
-      setFile(selectedFile);
-      Papa.parse(selectedFile, {
-        header: true,
-        preview: 1, // Only read the first few rows to get headers
-        complete: (results) => {
-          if (results.meta && results.meta.fields) {
-            setColumns(results.meta.fields);
-            if (results.meta.fields.length > 0) {
-              // Default to the last column for target
-              setTargetCol(results.meta.fields[results.meta.fields.length - 1]);
-            }
-            setProtectedCols([]);
-          }
-        }
-      });
+  const resetFile = () => {
+    setFile(null);
+    setColumns([]);
+    setTargetCol('');
+    setProtectedCols([]);
+    setError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+  const handleFileSelect = (selectedFile) => {
+    if (!selectedFile) return;
+
+    if (!selectedFile.name.toLowerCase().endsWith('.csv')) {
+      setError('Please choose a CSV file.');
+      return;
     }
+
+    setError('');
+    setFile(selectedFile);
+
+    Papa.parse(selectedFile, {
+      header: true,
+      preview: 1,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const fields = results.meta?.fields?.filter(Boolean) || [];
+        setColumns(fields);
+        setTargetCol(fields.at(-1) || '');
+        setProtectedCols([]);
+        if (fields.length === 0) {
+          setError('No column headers were found in this CSV.');
+        }
+      },
+      error: () => {
+        resetFile();
+        setError('FairLens could not read this CSV. Please check the file and try again.');
+      },
+    });
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+    handleFileSelect(event.dataTransfer.files?.[0]);
+  };
+
+  const toggleProtectedColumn = (column) => {
+    setProtectedCols((current) => (
+      current.includes(column)
+        ? current.filter((item) => item !== column)
+        : [...current, column]
+    ));
   };
 
   const handleAnalyze = async () => {
-    if (!file) return;
+    if (!file || !targetCol) return;
     setIsAnalyzing(true);
+    setError('');
+
     try {
       const result = await analyzeDataset(file, targetCol, protectedCols);
-      // Pass the result to the dashboard page via router state
       navigate('/dashboard', { state: { result } });
     } catch (err) {
       console.error(err);
+      setError('The analysis failed. Please make sure the backend is running and try again.');
+    } finally {
       setIsAnalyzing(false);
     }
   };
 
+  const readiness = [
+    {
+      label: 'CSV file',
+      value: file ? file.name : 'Waiting for upload',
+      ready: Boolean(file),
+      icon: FileSpreadsheet,
+    },
+    {
+      label: 'Target column',
+      value: targetCol || 'Select an outcome',
+      ready: Boolean(targetCol),
+      icon: Target,
+    },
+    {
+      label: 'Protected attributes',
+      value: protectedCols.length ? `${protectedCols.length} selected` : 'Optional',
+      ready: protectedCols.length > 0,
+      icon: ShieldCheck,
+    },
+  ];
+
   return (
-    <div className="page-container animated-bg-container">
-      {/* Animated Background Orbs */}
-      <div className="bg-orb bg-orb-1"></div>
-      <div className="bg-orb bg-orb-2"></div>
+    <main className="page-container">
+      <div className="page-header">
+        <div>
+          <div className="page-kicker">
+            <ShieldCheck size={16} />
+            Bias scanner
+          </div>
+          <h1 className="page-title">Dataset Bias Scanner</h1>
+          <p className="page-description">
+            Upload a CSV, select the outcome column, and run a focused fairness audit across protected attributes.
+          </p>
+        </div>
+      </div>
 
-      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-        <h1 className="gradient-text" style={{ fontSize: '3rem', marginBottom: '1rem', textAlign: 'center' }}>
-          Dataset Bias Scanner
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', textAlign: 'center', maxWidth: '600px', fontSize: '1.1rem' }}>
-          Upload your dataset to automatically detect bias, compute fairness metrics, and generate AI-driven explanations.
-        </p>
+      <div className="upload-layout">
+        <section className="tool-panel upload-panel">
+          <div className="section-heading">
+            <div>
+              <h3>Dataset</h3>
+              <p>CSV files with a header row work best.</p>
+            </div>
+          </div>
 
-        <div className="glass-panel" style={{ width: '100%', maxWidth: '600px' }}>
-          <div 
-            onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--primary-amber)'; e.currentTarget.style.backgroundColor = 'rgba(255, 152, 0, 0.05)'; }}
-            onDragLeave={(e) => { e.currentTarget.style.borderColor = file ? 'var(--primary-amber)' : 'var(--border-color)'; e.currentTarget.style.backgroundColor = file ? 'rgba(255, 152, 0, 0.05)' : 'transparent'; }}
-            onDrop={(e) => {
-              handleDrop(e);
-              e.currentTarget.style.borderColor = 'var(--primary-amber)';
-              e.currentTarget.style.backgroundColor = 'rgba(255, 152, 0, 0.05)';
+          <input
+            ref={fileInputRef}
+            className="sr-only"
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(event) => handleFileSelect(event.target.files?.[0])}
+          />
+
+          <div
+            className={`dropzone ${isDragging ? 'is-dragging' : ''} ${file ? 'has-file' : ''}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                fileInputRef.current?.click();
+              }
             }}
-            style={{
-              border: '2px dashed',
-              borderColor: file ? 'var(--primary-amber)' : 'var(--border-color)',
-              borderRadius: 'var(--border-radius)',
-              padding: '3rem 2rem',
-              textAlign: 'center',
-              marginBottom: '2rem',
-              backgroundColor: file ? 'rgba(255, 152, 0, 0.05)' : 'transparent',
-              transition: 'all 0.3s ease',
-              cursor: 'pointer'
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
             }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
           >
             {file ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                <File size={48} color="var(--primary-amber)" style={{ animation: 'float 3s ease-in-out infinite' }} />
-                <div style={{ fontWeight: 600, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{file.name}</div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setFile(null); setColumns([]); setTargetCol(''); setProtectedCols([]); }} 
-                  style={{ background: 'transparent', color: 'var(--accent-red)', padding: '0.4rem 1rem', border: '1px solid var(--accent-red)', borderRadius: '20px' }}
+              <div className="file-card">
+                <div className="file-icon">
+                  <FileSpreadsheet size={24} />
+                </div>
+                <div className="file-details">
+                  <strong>{file.name}</strong>
+                  <span>{formatFileSize(file.size)} - {columns.length} columns detected</span>
+                </div>
+                <button
+                  className="btn-danger btn-icon"
+                  type="button"
+                  aria-label="Remove selected file"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    resetFile();
+                  }}
                 >
-                  Remove
+                  <X size={18} />
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', color: 'var(--text-secondary)' }}>
-                <UploadCloud size={56} style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)' }} />
-                <div style={{ fontSize: '1.1rem' }}>
-                  <strong>Drag and drop</strong> your CSV file here, or{' '}
-                  <label style={{ color: 'var(--primary-amber)', cursor: 'pointer', textDecoration: 'underline' }}>
-                    browse
-                    <input 
-                      type="file" 
-                      accept=".csv" 
-                      style={{ display: 'none' }} 
-                      onChange={(e) => handleFileSelect(e.target.files[0])} 
-                    />
-                  </label>
+              <div className="dropzone-content">
+                <div className="dropzone-icon">
+                  <UploadCloud size={30} />
                 </div>
-                <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>Supports .csv files up to 50MB</span>
+                <strong>Drop a CSV here or browse files</strong>
+                <span>FairLens will read the header row before analysis.</span>
               </div>
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Target Column (Outcome)</label>
-              {columns.length > 0 ? (
-                <select 
-                  value={targetCol} 
-                  onChange={(e) => setTargetCol(e.target.value)}
-                  style={{ padding: '0.8rem 1rem', fontSize: '1rem', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                >
-                  {columns.map(col => (
-                    <option key={col} value={col} style={{ background: '#333' }}>{col}</option>
-                  ))}
-                </select>
-              ) : (
-                <input 
-                  type="text" 
-                  value={targetCol} 
-                  onChange={(e) => setTargetCol(e.target.value)} 
-                  placeholder="e.g., loan_approved"
-                  disabled={true}
-                  style={{ padding: '0.8rem 1rem', fontSize: '1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', opacity: 0.5 }}
-                />
-              )}
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <AlertCircle size={14} /> The column predicting the outcome.
+          {error && (
+            <div className="error-banner" role="alert">
+              <AlertCircle size={18} />
+              {error}
+            </div>
+          )}
+
+          <div className="setup-grid">
+            <div className="field-group">
+              <label htmlFor="target-column">Target column</label>
+              <select
+                id="target-column"
+                value={targetCol}
+                disabled={columns.length === 0}
+                onChange={(event) => {
+                  setTargetCol(event.target.value);
+                  setProtectedCols((current) => current.filter((column) => column !== event.target.value));
+                }}
+              >
+                {columns.length === 0 ? (
+                  <option>Upload a dataset first</option>
+                ) : (
+                  columns.map((column) => (
+                    <option key={column} value={column}>
+                      {column}
+                    </option>
+                  ))
+                )}
+              </select>
+              <span className="field-hint">
+                <Target size={14} />
+                The outcome FairLens should evaluate.
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Protected Attributes</label>
-              {columns.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
-                  {columns.filter(c => c !== targetCol).map(col => (
-                    <label key={col} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={protectedCols.includes(col)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setProtectedCols([...protectedCols, col]);
-                          } else {
-                            setProtectedCols(protectedCols.filter(c => c !== col));
-                          }
-                        }}
-                      />
-                      {col}
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <input 
-                  type="text" 
-                  value="" 
-                  onChange={() => {}} 
-                  placeholder="Upload a dataset first"
-                  disabled={true}
-                  style={{ padding: '0.8rem 1rem', fontSize: '1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', opacity: 0.5 }}
-                />
-              )}
+            <div className="field-group">
+              <label>Protected attributes</label>
+              <div className="checkbox-grid">
+                {columns.length === 0 ? (
+                  <span className="muted-cell">Upload a dataset to select attributes.</span>
+                ) : (
+                  columns
+                    .filter((column) => column !== targetCol)
+                    .map((column) => (
+                      <label
+                        className={`checkbox-pill ${protectedCols.includes(column) ? 'is-selected' : ''}`}
+                        key={column}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={protectedCols.includes(column)}
+                          onChange={() => toggleProtectedColumn(column)}
+                        />
+                        {column}
+                      </label>
+                    ))
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside className="tool-panel audit-panel">
+          <div className="section-heading">
+            <div>
+              <h3>Audit setup</h3>
+              <p>Ready status updates as your dataset is configured.</p>
             </div>
           </div>
 
-          <button 
-            onClick={handleAnalyze} 
-            disabled={!file || isAnalyzing}
-            style={{ 
-              width: '100%', 
-              padding: '1rem', 
-              fontSize: '1.1rem', 
-              fontWeight: 600,
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              gap: '0.75rem',
-              borderRadius: '12px',
-              animation: (!file || isAnalyzing) ? 'none' : 'pulse-glow 2s infinite'
-            }}
+          <div className="readiness-list">
+            {readiness.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div className={`readiness-row ${item.ready ? 'is-ready' : ''}`} key={item.label}>
+                  <div className="readiness-icon">
+                    {item.ready ? <CheckCircle2 size={18} /> : <Icon size={18} />}
+                  </div>
+                  <div>
+                    <strong>{item.label}</strong>
+                    <span>{item.value}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            className="btn-wide audit-submit"
+            type="button"
+            disabled={!file || !targetCol || isAnalyzing}
+            onClick={handleAnalyze}
           >
             {isAnalyzing ? (
               <>
-                <span className="spinner"></span>
-                Analyzing Dataset...
+                <span className="spinner" />
+                Analyzing
               </>
             ) : (
-              <>Analyze Dataset</>
+              <>
+                <PlayCircle size={19} />
+                Run fairness audit
+              </>
             )}
           </button>
-        </div>
+        </aside>
       </div>
-    </div>
+    </main>
   );
 }

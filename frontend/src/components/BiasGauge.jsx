@@ -1,62 +1,70 @@
-import React from 'react';
+const clampScore = (value) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return 0;
+  return Math.max(0, Math.min(100, parsed));
+};
 
 export default function BiasGauge({ score }) {
-  // Score is 0-100. Lower is better (less bias) or higher is better (more fair)? 
-  // Let's assume higher score = more biased (based on "High Bias Detected: 72")
-  
-  let color = 'var(--accent-green)'; // Low bias
-  let label = 'Low Bias';
-  
-  if (score > 40) {
-    color = 'var(--primary-amber)'; // Medium bias
-    label = 'Moderate Bias';
-  }
-  if (score > 70) {
-    color = 'var(--accent-red)'; // High bias
-    label = 'High Bias';
+  const normalizedScore = clampScore(score);
+  const radius = 68;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (normalizedScore / 100) * circumference;
+
+  let color = 'var(--accent-green)';
+  let label = 'Low bias';
+
+  if (normalizedScore > 40) {
+    color = 'var(--accent-amber)';
+    label = 'Moderate bias';
   }
 
-  // Circular progress math
-  const radius = 60;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+  if (normalizedScore > 70) {
+    color = 'var(--accent-red)';
+    label = 'High bias';
+  }
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <h3 style={{ marginBottom: '1.5rem', alignSelf: 'flex-start' }}>Overall Bias Score</h3>
-      
-      <div style={{ position: 'relative', width: '150px', height: '150px' }}>
-        {/* Background Circle */}
-        <svg width="150" height="150" viewBox="0 0 150 150">
+    <section className="card dashboard-card gauge-card" style={{ '--gauge-color': color }}>
+      <div className="section-heading">
+        <div>
+          <h3>Overall bias score</h3>
+          <p>Higher scores indicate stronger disparities.</p>
+        </div>
+      </div>
+
+      <div className="gauge-wrap" aria-label={`Bias score ${normalizedScore} out of 100`}>
+        <svg width="176" height="176" viewBox="0 0 176 176" role="img">
           <circle
-            cx="75" cy="75" r={radius}
-            fill="none" stroke="var(--bg-elevated)" strokeWidth="12"
+            cx="88"
+            cy="88"
+            r={radius}
+            fill="none"
+            stroke="var(--bg-muted)"
+            strokeWidth="14"
           />
-          {/* Progress Circle */}
           <circle
-            cx="75" cy="75" r={radius}
-            fill="none" stroke={color} strokeWidth="12"
+            cx="88"
+            cy="88"
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="14"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }}
-            transform="rotate(-90 75 75)"
+            transform="rotate(-90 88 88)"
           />
         </svg>
-        <div style={{
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {score}
-          </span>
+        <div className="gauge-value">
+          <strong>{normalizedScore}</strong>
+          <span>out of 100</span>
         </div>
       </div>
-      
-      <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: color }}></div>
-        <span style={{ fontWeight: 600 }}>{label}</span>
+
+      <div className="gauge-legend">
+        <span className="gauge-dot" />
+        {label}
       </div>
-    </div>
+    </section>
   );
 }

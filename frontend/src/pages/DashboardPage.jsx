@@ -1,8 +1,28 @@
-import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Bot,
+  Download,
+  FileUp,
+  Gauge,
+  ShieldAlert,
+} from 'lucide-react';
 import BiasGauge from '../components/BiasGauge';
 import FairnessChart from '../components/FairnessChart';
-import { AlertTriangle, Info, Bot } from 'lucide-react';
+
+const getBiasTone = (score) => {
+  if (score > 70) return 'red';
+  if (score > 40) return 'amber';
+  return 'green';
+};
+
+const formatMetric = (value, fallback = 'N/A') => {
+  if (value === undefined || value === null || value === '') return fallback;
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return value;
+  return parsed.toFixed(Math.abs(parsed) < 10 ? 3 : 1);
+};
 
 export default function DashboardPage() {
   const location = useLocation();
@@ -10,108 +30,146 @@ export default function DashboardPage() {
 
   if (!result) {
     return (
-      <div className="page-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <h2>No Analysis Data</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Please upload and analyze a dataset first.</p>
-        <Link to="/">
-          <button>Go to Upload</button>
-        </Link>
-      </div>
+      <main className="page-container">
+        <section className="card empty-state">
+          <div className="empty-state-inner">
+            <div className="empty-icon">
+              <FileUp size={28} />
+            </div>
+            <h2>No analysis data</h2>
+            <p>Upload and scan a dataset to view fairness metrics, flagged attributes, and AI insight.</p>
+            <Link className="button" to="/upload">
+              Upload dataset
+            </Link>
+          </div>
+        </section>
+      </main>
     );
   }
 
+  const score = Number(result.bias_score || 0);
+  const flaggedColumns = Array.isArray(result.flagged_columns) ? result.flagged_columns : [];
+  const metrics = result.metrics || {};
+  const verdict = result.verdict || 'Analysis complete';
+
+  const handleDownload = () => {
+    const report = {
+      generated_at: new Date().toISOString(),
+      ...result,
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'fairlens-report.json';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+    <main className="page-container">
+      <div className="page-header">
         <div>
-          <h1 style={{ marginBottom: '0.5rem' }}>Fairness Analysis Results</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Status:</span>
-            <span className={`badge ${result.bias_score > 70 ? 'red' : result.bias_score > 40 ? 'amber' : 'green'}`}>
-              {result.verdict}
-            </span>
+          <div className="page-kicker">
+            <Gauge size={16} />
+            Analysis results
           </div>
+          <h1 className="page-title">Fairness Analysis Results</h1>
+          <p className="page-description">
+            Review bias severity, protected-attribute flags, and group-level outcome differences.
+          </p>
         </div>
-        <button style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
-          Download Report
-        </button>
+        <div className="history-tools">
+          <span className={`badge ${getBiasTone(score)}`}>
+            {verdict}
+          </span>
+          <button className="btn-secondary" type="button" onClick={handleDownload}>
+            <Download size={18} />
+            Download report
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-grid">
-        {/* Top Left: Bias Gauge */}
-        <BiasGauge score={result.bias_score} />
+        <BiasGauge score={score} />
 
-        {/* Top Right: Flagged Attributes & Metrics */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Key Metrics & Flags</h3>
-          
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Flagged Columns
-            </h4>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {result.flagged_columns.map(col => (
-                <div key={col} style={{ 
-                  display: 'flex', alignItems: 'center', gap: '0.5rem', 
-                  backgroundColor: 'rgba(229, 57, 53, 0.1)', color: 'var(--accent-red)',
-                  padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)', fontWeight: 500
-                }}>
-                  <AlertTriangle size={16} />
-                  {col}
-                </div>
+        <section className="card dashboard-card">
+          <div className="section-heading">
+            <div>
+              <h3>Key metrics</h3>
+              <p>Core signals from the latest scan.</p>
+            </div>
+          </div>
+          <div className="metric-grid">
+            <div className="metric-tile">
+              <span>Demographic parity diff</span>
+              <strong>{formatMetric(metrics.demographic_parity_diff)}</strong>
+            </div>
+            <div className="metric-tile">
+              <span>Disparate impact</span>
+              <strong>{formatMetric(metrics.disparate_impact)}</strong>
+            </div>
+            <div className="metric-tile">
+              <span>Flagged columns</span>
+              <strong>{flaggedColumns.length}</strong>
+            </div>
+            <div className="metric-tile">
+              <span>Bias score</span>
+              <strong>{score}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section className="card dashboard-card">
+          <div className="section-heading">
+            <div>
+              <h3>Protected attribute flags</h3>
+              <p>Columns with measurable disparity signals.</p>
+            </div>
+          </div>
+          {flaggedColumns.length > 0 ? (
+            <div className="flag-list">
+              {flaggedColumns.map((column) => (
+                <span className="flag-chip" key={column}>
+                  <AlertTriangle size={15} />
+                  {column}
+                </span>
               ))}
-              {result.flagged_columns.length === 0 && (
-                <span style={{ color: 'var(--text-secondary)' }}>None flagged</span>
-              )}
             </div>
-          </div>
-
-          <div>
-            <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Statistical Metrics
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div style={{ backgroundColor: 'var(--bg-dark)', padding: '1rem', borderRadius: 'var(--border-radius)' }}>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Demographic Parity Diff</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{result.metrics.demographic_parity_diff}</div>
+          ) : (
+            <div className="readiness-row is-ready">
+              <div className="readiness-icon">
+                <ShieldAlert size={18} />
               </div>
-              <div style={{ backgroundColor: 'var(--bg-dark)', padding: '1rem', borderRadius: 'var(--border-radius)' }}>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Disparate Impact</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{result.metrics.disparate_impact}</div>
+              <div>
+                <strong>No flagged attributes</strong>
+                <span>No protected column crossed the current threshold.</span>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+        </section>
 
-        {/* Bottom Left: Fairness Chart */}
         <FairnessChart groupStats={result.group_stats} />
 
-        {/* Bottom Right: AI Explanation */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', border: '1px solid rgba(255, 152, 0, 0.3)', background: 'linear-gradient(to bottom right, var(--bg-surface), rgba(255, 152, 0, 0.05))' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <div style={{ backgroundColor: 'var(--primary-amber)', padding: '0.5rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Bot size={20} color="#000" />
+        <section className="card dashboard-card insight-panel">
+          <div className="section-heading">
+            <div>
+              <h3>AI insight</h3>
+              <p>Plain-language summary of the scan.</p>
             </div>
-            <h3 style={{ margin: 0 }}>AI Insight</h3>
+            <Bot size={22} color="var(--primary)" />
           </div>
-          
-          <div style={{ 
-            flex: 1, backgroundColor: 'var(--bg-dark)', padding: '1.5rem', 
-            borderRadius: 'var(--border-radius)', color: 'var(--text-primary)',
-            lineHeight: 1.6
-          }}>
-            {result.ai_explanation}
+
+          <div className="insight-copy">
+            {result.ai_explanation || 'No AI explanation was included with this scan.'}
           </div>
-          
-          <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-            <Link to="/chat">
-              <button style={{ backgroundColor: 'transparent', color: 'var(--primary-amber)', border: '1px solid var(--primary-amber)' }}>
-                Ask AI for Details →
-              </button>
-            </Link>
-          </div>
-        </div>
+
+          <Link className="button btn-secondary" to="/chat">
+            Ask follow-up
+            <ArrowRight size={17} />
+          </Link>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
