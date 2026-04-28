@@ -46,11 +46,7 @@ Before running the project for the first time, you must install the dependencies
    ```
 
 ### 4. Running the Project
-The easiest way to start the project on Windows is by using the included batch script. This will automatically build the React frontend and start the Python backend server.
+Open your browser and go to: **https://fairlens-ai-h3gl.onrender.com**
 
-1. Double-click **`start.bat`** in the main project folder.
-2. Open your browser and go to: **`http://localhost:8000`**
-
-*(Note: The `start.bat` script automatically stops any old hanging servers on port 8000 so you never get an "address already in use" error!)*
 
 
