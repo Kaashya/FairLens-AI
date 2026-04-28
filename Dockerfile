@@ -17,7 +17,7 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/backend:/app
 
 # Copy backend requirements and install them
 COPY backend/requirements.txt ./backend/
@@ -35,5 +35,8 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 # Expose the port Uvicorn will run on
 EXPOSE 8000
 
+# Set the working directory to backend so Uvicorn can find the 'app' module
+WORKDIR /app/backend
+
 # Command to run the application
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
