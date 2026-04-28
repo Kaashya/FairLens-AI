@@ -53,16 +53,4 @@ The easiest way to start the project on Windows is by using the included batch s
 
 *(Note: The `start.bat` script automatically stops any old hanging servers on port 8000 so you never get an "address already in use" error!)*
 
-## 📸 Screenshots
 
-### Upload Dataset
-![Upload Dataset](FairLens%20ScreenShot/upload.png)
-
-### Dashboard
-![FairLens Dashboard](FairLens%20ScreenShot/Dashboard.png)
-
-### AI Explanation
-![AI Explanation](FairLens%20ScreenShot/Ai_Explainer.png)
-
-### Cloud History
-![Scan History](FairLens%20ScreenShot/History.png)
