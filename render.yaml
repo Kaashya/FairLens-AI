@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: fairlens-ai
+    env: docker
+    plan: free
+    region: ohio
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false # You will need to add this manually in the Render dashboard
